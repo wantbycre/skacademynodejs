@@ -1,0 +1,29 @@
+extends layout
+
+block content
+  h1= title
+  p Welcome to #{title}
+  ul
+    each movie in movies
+      li
+        a(href="/movie/"+ movie) #{movie}
+        form(method="POST" action="/movie/delete")<!--삭제-->
+          p
+            input(type="hidden" name="title" value=movie)
+          p
+            input(type="submit" value="delete")
+  form(method="POST" action="/movie/add")<!--추가-->
+    p Movie name :
+      input(type="text" name="title")
+    p Movie director :
+      input(type="text" name="director")
+    p
+      input(type="submit" name="add")
+  form(method="POST" action="/movies/delete")<!--전체삭제-->
+    p
+      input(type="submit" value="delete all")
+  form(method="POST" action="/movies/modify")<!--전체수정-->
+    p Movie List (JSON) :
+      input(type="text" name="movies")
+    p
+      input(type="submit" value="modify all")
