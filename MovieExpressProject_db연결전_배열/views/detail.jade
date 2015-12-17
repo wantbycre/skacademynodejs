@@ -1,0 +1,16 @@
+extends layout
+
+block content
+  h1= title
+  form(method="POST" action="/movie/modify")
+    p
+      input(type="text" name="title" value=movie.title)
+    p
+      input(type="text" name="director" value=movie.director)
+    p
+      input(type="submit" name="modify")
+  form(method="POST" action="/movie/delete")
+    p
+      input(type="hidden" name="title" value=movie.title)
+    p
+      input(type="submit" value="delete")

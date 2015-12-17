@@ -1,0 +1,43 @@
+https://www.mongodb.org/downloads#production
+->32비트 ->아래 View Build Archive 클릭 -> 
+win32/mongodb-win32-i386-3.1.3-signed.msi , 5월19일자 다운
+
+
+
+서버실행
+mkdir var
+cd bin
+mongod -dbpath c:\mongodb\var
+
+클라이언트 실행 : mongo
+
+
+show dbs;  =-> show databases;
+use moviest;  => movies를 알아서 찾아줌 꼭 use로 찾아줘야함
+
+insert->
+db.movie.save({title:"아바타",director:"제임스 카메룬",year:2009,synopsis:"블라블라블라..."})
+db.movie.save({title:"올드보이",director:"제임스 카메룬",year:2009,synopsis:"블라블라블라..."})
+
+select->
+db.movie.find();
+
+select에서 title만 찾기 ->
+db.movie.find({title:"아바타"});
+
+update->
+db.movie.update({title:"아바타"},{"$set":{synopsis:"파란외계인!!"}});
+
+delete->
+db.movie.remove({title:"아바타"}); 개별내용 삭제
+db.movie.remove({}); 전체내용삭제
+db.movie.drop(); movie삭제
+
+for(i=0;i<100;i++){db.users.save({name:'user'+i});}
+db.users.count();
+db.users.find();
+
+
+서버종료
+use admin;
+db.shutdownServer();
