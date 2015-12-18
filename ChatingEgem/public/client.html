@@ -1,0 +1,144 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>채팅 클라이언트</title>
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+	<script>
+		var socket = null;
+		$(document).ready(function(){
+			// 서버에서 받아오는 부분
+			socket = io.connect();
+			// 15. 디비에 로그를 꺼내오기
+			socket.on('socket_evt_logs',function(data){
+				data = JSON.parse(data);
+				$('#chat_logs').empty();
+				for(var i =0;i<data.length;i++){
+					$('#chat_logs').append('<li>'+data[i].log+'('+data[i].date+')</li>');
+				}
+			});
+			// 4. 접속 실패 사례 만들기
+			socket.on('chat_fail' , function(data){
+				data = JSON.parse(data);
+				alert(data+'님은 이미 접속된 ID입니다.');
+			});
+			// 5. 성공시 넘어오는 사례 만들기.
+			socket.on('chat_join' , function(data){
+				data = JSON.parse(data);
+				$('#chat_user_list').empty(); //사용자 목록 초기화
+				for(var i=0;i<data.length;i++){
+					var user_id = data[i];
+					if(user_id  == chat_id){ //사용자 자신일 경우
+						$('#chat_user_list').append('<li><strong>'+user_id+'(me)</strong></li>');
+						$('#chat_id').attr('disabled',true);
+					}else{ // 다른 사용자일 겨우
+						$('#chat_user_list').append('<li>'+user_id+'</li>');
+					}
+				}
+				$('#now_user_cnt').html(data.length); // 카운트만 넣기
+			});
+			socket.on('someone_leaved' , function(data){
+				data = JSON.parse(data);
+				$('#chat_user_list').empty(); //사용자 목록 초기화
+				for(var i=0;i<data.length;i++){
+					var user_id = data[i];
+					if(user_id  == chat_id){ //사용자 자신일 경우
+						$('#chat_user_list').append('<li><strong>'+user_id+'(me)</strong></li>');
+					}else{ // 다른 사용자일 겨우
+						$('#chat_user_list').append('<li>'+user_id+'</li>');
+					}
+				}
+				$('#now_user_cnt').html(data.length); // 카운트만 넣기				
+			});
+			
+			// 웹브라우저 닫으면 방나기
+			$(window).unload(function(){
+				chat_out();
+			})
+			
+			// 11. 서버에서 채팅 메시지 다시 받기
+			socket.on('message_go' , function(data){
+				data = decodeURIComponent(data);
+				// 마지막 새로운사람들어왔을때 기존 메시지 띄어주기 추가됨
+				var msgs = JSON.parse(data);
+				for(var i=0;i<msgs.length;i++){
+					data = msgs[i].message;
+					// 마지막 새로운사람들어왔을때 기존 메시지 띄어주기 추가됨
+					if (msgs[i].message == undefined) // 메시지가 빈칸으로 막 저장되있을때 초기화 해줘야함
+						data = '';
+					data = data.replace(/&/g,'&amp;');
+					data = data.replace(/\"/g, '&quot;')
+					data = data.replace(/\'/g, '&#39;')
+					data = data.replace(/</g, '&lt;')
+					data = data.replace(/</g, '&gt;')
+					//console.log('123123')
+					$('#chat_list').append('<li>'+data+'</li>');
+				}
+			});
+			//chat_uesr();
+		});
+		
+		//클라이언트 이벤트
+		// 8. 사용자 입력 텍스트 서버 보내기
+		function chat_input(){
+			var encodeMsg = encodeURIComponent($('#chat_input').val()); // 문자열을 ->url인코딩
+			socket.emit('message',JSON.stringify({chat_id:chat_id,message:encodeMsg}));
+			$('#chat_input').val('');
+		};
+		// 6. 채팅방 나가보자
+		function chat_out(){
+			socket.emit('leave',JSON.stringify({chat_id:chat_id}));
+			$('#chat_id').attr('disabled',false);
+			$('#chat_id').val('ID 입력');
+			$('#chat_list').html();
+			$('#chat_form').slideUp();
+			$('#chat_form_no').slideDown();
+			chat_id='';
+		};
+		
+		// 2. 접속이 정상이라면 in으로 서버 보냄 서버가 3번
+		function chat_in(){
+			socket.emit('chat_conn' , JSON.stringify({chat_id:chat_id}));
+			$('#chat_list').html('');
+		};
+		
+		// 1. 제일처음 접속해야한다 제일 처음작업
+		var chat_id='';
+		function connection(){
+			chat_id = $('#chat_id').val();
+			if(chat_id == '' || chat_id == 'ID 입력'){
+				alert("ID를 입력해주세요.");
+				$('#chat_id').focus();				
+			}else{
+				chat_in();
+				$('#chat_form_no').slideUp();
+				$('#chat_form').slideDown();
+			}
+		};
+		
+	</script>
+</head>
+<body>
+	<div id="contents">
+		<h1>채팅방</h1>
+		<div class="chat_content">
+			<div class="chat_login"><!-- 로그인 영역 -->
+				<input type="text" id="chat_id" value="ID 입력" onclick="$(this).val('');">
+				&nbsp;&nbsp;&nbsp;<a href="javascript:connection();">접속하기</a>
+				<strong>현재 접속자수:</strong><span id="now_user_cnt">-</span>
+			</div>
+			<div id="chat_form_no">ID 입력 후 접속해주세요.</div>
+			<div id="chat_form" style="display:none;"><!-- 채팅창 영역 -->
+				<ul id="chat_list"></ul>
+				<ul id="chat_user_list"></ul>
+				<input type="text" id="chat_input" value="대화 글을 입력하세요." onclick="$(this).val('');">
+				<a href="javascript:chat_input();">입력</a>&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:chat_out();">나가기</a>
+			</div>		
+			<div class="chat_history"><!-- 접속 로그 영역 -->
+				<ul id="chat_logs"></ul>		
+			</div>
+		</div>
+	</div>
+</body>
+</html>
